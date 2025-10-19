@@ -1,38 +1,79 @@
-# Terralink SDI‑12 → ESP32 (M5Stack Atom) with ESPHome  
-_Clean VWC, Temperature, and pore‑water EC for Home Assistant (Coco Coir calibration)_
+# Growlink Terralink Substrate Sensor — ESPHome Integration via M5Stack Atom
 
-This project shows how to read a **Growlink Terralink** soil moisture sensor over **SDI‑12** with an **ESP32 (M5Stack Atom)** using ESPHome, and expose **clean** Home Assistant entities:
-
-- **VWC** (Volumetric Water Content) — `%`
-- **Temperature** — `°C`
-- **pwEC** (pore‑water electrical conductivity) — `dS/m`
-
-It uses **single‑wire, half‑duplex on one GPIO** (no extra parts), matching the quick setup you already have.
+## Overview
+This guide documents how to connect and operate the **Growlink Terralink** substrate sensor directly on a **M5Stack Atom (ESP32)** running **ESPHome**.  
+No external converters or breakout hardware are required. The sensor communicates over a single half-duplex SDI-12 line handled entirely in software.
 
 ---
 
-## What you get
+## Hardware Summary
 
-- Minimal wiring: **GND / 5 V / one data wire**
-- Proper SDI‑12 framing (1200 baud, **7‑E‑1**, inverted, half‑duplex)
-- Coco‑coir (soilless) calibration polynomial for **VWC**
-- Hilhorst‑style **pore EC** calculation with temperature compensation to 25 °C
-- Only three user‑facing sensors in Home Assistant; raw values are hidden
+| Component | Purpose |
+|------------|----------|
+| M5Stack Atom (ESP32) | Controller running ESPHome firmware |
+| Growlink Terralink Sensor | Measures volumetric water content (VWC), bulk EC, and temperature |
+| 5 V USB power | Supplies both Atom and sensor |
+| Shared Ground | Reference for signal and power |
 
----
-
-## Parts
-
-- **ESP32**: M5Stack **Atom** (or similar ESP32 board)
-- **Sensor**: Growlink **Terralink** SDI‑12 soil probe
-- **USB‑C cable** for the Atom
-- **Jumper/Grove pigtail** (to break out the sensor’s red/black/white leads)
-
-> _Optional (recommended for production):_ a simple inverting level shifter or transistor stage to guarantee 3.3 V on the ESP32 pin if your SDI‑12 idle high is ~5 V. Many people run direct at 1200 baud without issues, but check with a meter if in doubt.
+**Sensor electrical characteristics**
+- Protocol: SDI-12 v1.3  
+- Supply voltage: 3.6 – 16 V DC (typical 12 V, stable 5 V tested OK)  
+- Measurement current: ≈ 10 mA for 150 ms
 
 ---
 
-## Wiring (no extra parts)
+## Wiring
 
-We use the **Atom’s 5 V** for power and a single **GPIO26** for SDI‑12 data (TX/RX shared internally by the driver in half‑duplex mode).
+| Terralink Wire | Connect to Atom Pin | Function |
+|----------------|---------------------|-----------|
+| **Red** | 5 V | Power input |
+| **White** | GPIO 26 | SDI-12 data line (TX/RX half-duplex) |
+| **Bare** | GND | Common ground |
 
+Notes:
+- The SDI-12 bus uses one bidirectional data wire.
+- UART on GPIO 26 is configured for 1200 baud, 7-E-1, half-duplex, inverted logic.
+- Use shielded cable if the environment is electrically noisy or cables exceed 10 m.
+
+---
+
+## Software
+
+The working ESPHome configuration for this setup is maintained at:  
+**<https://github.com/JakeTheRabbit/Grownlink-Terralink-Substrate-Sensor-for-ESP-Home/blob/main/terralink_coco.yaml>**
+
+That YAML file contains:
+- Wi-Fi and OTA setup  
+- SDI-12 component definitions using the `ssieb/esphome_components` fork  
+- UART half-duplex configuration on GPIO 26  
+- Derived template sensors for:
+  - Apparent permittivity (εb)
+  - Bulk EC (σb)
+  - Temperature (°C)
+  - Computed VWC (raw and aligned)
+  - Hilhorst pore-water EC (σp)
+
+---
+
+## Deployment Steps
+1. Clone or download the repository containing the YAML configuration.  
+2. Flash the Atom via USB using:
+
+3. Connect the device to Wi-Fi and verify registration in Home Assistant.  
+4. View live SDI-12 readings in the ESPHome logs to confirm communication.  
+5. Calibrate the **VWC (aligned)** scaling coefficient if comparing against a reference probe (e.g. TEROS-12).
+
+---
+
+## Operational Notes
+- The SDI-12 bus supports multiple sensors (addresses 0–9) daisy-chained on the same data line.  
+- Keep total cable length under 10 m for reliable timing.  
+- Readings update every 30 seconds by default.  
+- Temperature-normalized EC and pore-water EC follow the METER Group Hilhorst model.
+
+---
+
+## Maintenance
+- Inspect sensor cable insulation and GND continuity monthly in high-humidity environments.  
+- Clean the sensor with deionized water between crop cycles.  
+- Use dielectric grease on connectors to prevent corrosion.
