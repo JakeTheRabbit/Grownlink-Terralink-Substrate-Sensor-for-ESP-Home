@@ -1,8 +1,17 @@
 # Growlink Terralink Substrate Sensor — ESPHome Integration via M5Stack Atom
 
+# Pics
+
+<img width="265" height="473" alt="image" src="https://github.com/user-attachments/assets/efe80180-a6d1-4ad8-b45e-2f1ecb08d310" />
+<img width="636" height="348" alt="image" src="https://github.com/user-attachments/assets/ac388d9d-5bce-43cd-bb30-e25c32d05460" />
+<img width="515" height="653" alt="image" src="https://github.com/user-attachments/assets/11ebe0a6-d889-43af-a328-31ce9532aeae" />
+
+
+
 ## Overview
 This guide documents how to connect and operate the **Growlink Terralink** substrate sensor directly on a **M5Stack Atom (ESP32)** running **ESPHome**.  
 No external converters or breakout hardware are required. The sensor communicates over a single half-duplex SDI-12 line handled entirely in software.
+What this means is that you don't need the Growlink cloud based controller to use the sensor. Instead you can buy an M5Stack Atom for $7.50 and start using it. https://shop.m5stack.com/products/atom-lite-esp32-development-kit
 
 ---
 
