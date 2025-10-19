@@ -7,80 +7,150 @@
 <img width="515" height="653" alt="image" src="https://github.com/user-attachments/assets/11ebe0a6-d889-43af-a328-31ce9532aeae" />
 
 
-
 ## Overview
 This guide documents how to connect and operate the **Growlink Terralink** substrate sensor directly on a **M5Stack Atom (ESP32)** running **ESPHome**.  
 No external converters or breakout hardware are required. The sensor communicates over a single half-duplex SDI-12 line handled entirely in software.
 What this means is that you don't need the Growlink cloud based controller to use the sensor. Instead you can buy an M5Stack Atom for $7.50 and start using it. https://shop.m5stack.com/products/atom-lite-esp32-development-kit
 
----
 
 ## Hardware Summary
 
 | Component | Purpose |
-|------------|----------|
+|----------|---------|
 | M5Stack Atom (ESP32) | Controller running ESPHome firmware |
-| Growlink Terralink Sensor | Measures volumetric water content (VWC), bulk EC, and temperature |
-| 5 V USB power | Supplies both Atom and sensor |
+| Growlink Terralink Sensor | Measures VWC, bulk EC, and temperature |
+| 5 V USB power | Powers Atom and sensor |
 | Shared Ground | Reference for signal and power |
 
 **Sensor electrical characteristics**
-- Protocol: SDI-12 v1.3  
-- Supply voltage: 3.6 – 16 V DC (typical 12 V, stable 5 V tested OK)  
-- Measurement current: ≈ 10 mA for 150 ms
+- Protocol: SDI-12 v1.3
+- Supply voltage: 3.6–16 V DC (5 V tested OK in this setup)
+- Measurement current: ~10 mA for ~150 ms
 
 ---
 
 ## Wiring
 
 | Terralink Wire | Connect to Atom Pin | Function |
-|----------------|---------------------|-----------|
-| **Red** | 5 V | Power input |
-| **White** | GPIO 26 | SDI-12 data line (TX/RX half-duplex) |
-| **Bare** | GND | Common ground |
+|----------------|---------------------|----------|
+| Red            | 5 V                 | Sensor power |
+| White          | GPIO 26             | SDI-12 data (TX/RX half-duplex) |
+| Bare           | GND                 | Common ground |
 
 Notes:
-- The SDI-12 bus uses one bidirectional data wire.
-- UART on GPIO 26 is configured for 1200 baud, 7-E-1, half-duplex, inverted logic.
-- Use shielded cable if the environment is electrically noisy or cables exceed 10 m.
+- SDI-12 uses one bidirectional data wire.
+- UART on GPIO 26 must be 1200 baud, 7-E-1, half-duplex, inverted.
+- Use shielded cable if runs are long or the environment is noisy.
 
 ---
 
 ## Software
 
-The working ESPHome configuration for this setup is maintained at:  
-**<https://github.com/JakeTheRabbit/Grownlink-Terralink-Substrate-Sensor-for-ESP-Home/blob/main/terralink_coco.yaml>**
+Use the maintained ESPHome configuration here (do not paste YAML into this README):
+- Config: https://github.com/JakeTheRabbit/Grownlink-Terralink-Substrate-Sensor-for-ESP-Home/blob/main/terralink_coco.yaml
 
-That YAML file contains:
-- Wi-Fi and OTA setup  
-- SDI-12 component definitions using the `ssieb/esphome_components` fork  
-- UART half-duplex configuration on GPIO 26  
-- Derived template sensors for:
-  - Apparent permittivity (εb)
-  - Bulk EC (σb)
-  - Temperature (°C)
-  - Computed VWC (raw and aligned)
-  - Hilhorst pore-water EC (σp)
+That YAML includes:
+- Wi-Fi and OTA
+- `ssieb` SDI-12 external component + UART half-duplex on GPIO 26
+- Sensors for εb, bulk EC (σb), temperature (°C)
+- Template outputs for VWC (raw), VWC (aligned), pore-water EC (Hilhorst)
 
 ---
 
 ## Deployment Steps
-1. Clone or download the repository containing the YAML configuration.  
-2. Flash the Atom via USB using:
+1. Clone/download the repo with the YAML.
+2. Flash the Atom via USB:
 
-3. Connect the device to Wi-Fi and verify registration in Home Assistant.  
-4. View live SDI-12 readings in the ESPHome logs to confirm communication.  
-5. Calibrate the **VWC (aligned)** scaling coefficient if comparing against a reference probe (e.g. TEROS-12).
+   $ esphome run terralink_coco.yaml
+
+3. Join Wi-Fi; verify device appears in Home Assistant.
+4. Watch ESPHome logs to confirm SDI-12 reads.
+5. Calibrate VWC (raw/aligned) as needed (below).
 
 ---
 
 ## Operational Notes
-- The SDI-12 bus supports multiple sensors (addresses 0–9) daisy-chained on the same data line.  
-- Keep total cable length under 10 m for reliable timing.  
-- Readings update every 30 seconds by default.  
-- Temperature-normalized EC and pore-water EC follow the METER Group Hilhorst model.
+- SDI-12 supports multiple sensors (addresses 0–9) on the same data line; daisy-chain if required.
+- Keep total cable length conservative (≤10 m preferred) unless you’ve validated longer runs.
+- Default update interval is ~30 s (adjust in YAML if needed).
+- Pore-water EC is temperature-normalized (Hilhorst model) in the provided templates.
 
 ---
+
+## Maintenance
+- Monthly: inspect cable insulation, strain relief, and GND continuity.
+- Between crop cycles: clean sensor with deionized water; avoid solvents.
+- Use dielectric grease on connectors where corrosion risk is high.
+
+---
+
+## Easy Calibration Guide (For Normal Humans)
+
+This explains calibration in plain English. Do this after you see readings in Home Assistant.
+
+### 1. What Calibration Does
+Makes the numbers on screen match what “dry” and “wet” actually mean in your media.
+
+### 2. What You’ll Need
+- Terralink sensor working in ESPHome
+- Your media (rockwool, coco, soil, etc.)
+- Two samples: one dry, one fully wet (soaked then drained)
+- A cup/pot and water
+
+### 3. Get Your “Dry” Reading
+1. Use media that’s clearly dry (no recent watering).
+2. Insert the sensor fully (rods buried).
+3. Wait ~1 minute.
+4. Note TL VWC (raw) in Home Assistant — this is your dry baseline.
+
+### 4. Get Your “Wet” Reading
+1. Soak the media until dripping, drain ~10 minutes.
+2. Insert the same sensor.
+3. Wait ~1 minute.
+4. Note TL VWC (raw) — this is your wet baseline.
+
+### 5. Sanity Check
+- Dry should be low (often ~5–20% depending on media).
+- Wet should be high (often ~60–90% depending on media).
+If those look wrong, recheck insertion, drainage, and contact with media.
+
+### 6. Optional Fine-Tuning (match a reference probe)
+If you compare against a reference probe and want your numbers to match it:
+- Put both sensors in the same media.
+- If your VWC reads 60% and the reference says 48%, use a scale of 0.80 in your VWC (aligned) multiplier inside the YAML.
+
+### 7. Done
+You now have practical dry/wet anchors. Day-to-day readings should fall between them and make operational sense.
+
+---
+
+## Example: Quick Real-World Calibration Walkthrough (Coco)
+
+### Step 1 — Dry Sample
+- Insert sensor in dry coco (crumbly, light).
+- Wait ~1 minute.
+- Example: Dry coco = 11.5% VWC (your dry baseline).
+
+### Step 2 — Wet Sample
+- Soak coco to dripping, drain 10 minutes.
+- Insert sensor, wait ~1 minute.
+- Example: Wet coco = 78.4% VWC (your wet baseline).
+
+### Step 3 — Confirm Range
+
+| Condition      | VWC reading |
+|----------------|-------------|
+| Dry coco       | ~11 %       |
+| Fully wet coco | ~78 %       |
+
+### Step 4 — Optional Tuning
+If a reference probe says 48% while yours reads 60%, set the VWC (aligned) scale to 0.80 in the YAML.
+
+### Step 5 — Done
+- 15–25% → getting dry
+- 60–80% → well-watered
+Numbers now map to reality for coco. Same procedure works for rockwool/soil with different dry/wet values.
+
 
 ## Maintenance
 - Inspect sensor cable insulation and GND continuity monthly in high-humidity environments.  
