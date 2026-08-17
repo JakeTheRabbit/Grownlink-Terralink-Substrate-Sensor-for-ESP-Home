@@ -1,5 +1,7 @@
 # Growlink Terralink Substrate Sensor — ESPHome Integration via M5Stack Atom
 
+> **This repo is free. My 2am dryback debugging is not.** If it saved you a crop, a weekend, or a nervous breakdown — [buy the rabbit a bag of nutes](https://github.com/sponsors/JakeTheRabbit). If it didn't, keep your money. I respect a tight nutrient budget.
+
 # Pics
 
 <img width="265" height="473" alt="image" src="https://github.com/user-attachments/assets/efe80180-a6d1-4ad8-b45e-2f1ecb08d310" />
@@ -156,5 +158,3 @@ Numbers now map to reality for coco. Same procedure works for rockwool/soil with
 - Inspect sensor cable insulation and GND continuity monthly in high-humidity environments.  
 - Clean the sensor with deionized water between crop cycles.  
 - Use dielectric grease on connectors to prevent corrosion.
-
-> **This repo is free. My 2am dryback debugging is not.** If it saved you a crop, a weekend, or a nervous breakdown — [buy the rabbit a bag of nutes](https://github.com/sponsors/JakeTheRabbit). If it didn't, keep your money. I respect a tight nutrient budget.
